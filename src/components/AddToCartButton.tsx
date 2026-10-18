@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import { cart } from "@/lib/cart";
+import type { CartSnapshot } from "@/lib/catalog";
 import { CheckIcon } from "./Icons";
 
 export function AddToCartButton({
-  slug,
+  item,
   qty = 1,
   color,
   label = "Add to cart",
   variant = "solid",
 }: {
-  slug: string;
+  item: CartSnapshot;
   qty?: number;
   color?: string;
   label?: string;
@@ -44,7 +45,7 @@ export function AddToCartButton({
       type="button"
       className={`${base} ${style}`}
       onClick={() => {
-        cart.add(slug, qty, color);
+        cart.add(item, qty, color);
         setAdded(true);
         window.setTimeout(() => setAdded(false), 2500);
       }}

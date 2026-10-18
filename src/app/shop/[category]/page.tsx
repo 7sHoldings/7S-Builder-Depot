@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { categories, getCategory, productsIn } from "@/lib/catalog";
+import { categories, getCategory, isCategoryId } from "@/lib/catalog";
+import { getProductsIn } from "@/lib/products";
 
 export function generateStaticParams() {
   return categories.map((c) => ({ category: c.id }));
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: PageProps<"/shop/[category]">
 export default async function CategoryPage({ params }: PageProps<"/shop/[category]">) {
   const { category } = await params;
   const c = getCategory(category);
-  if (!c) notFound();
+  if (!c || !isCategoryId(category)) notFound();
+  const products = await getProductsIn(c.id);
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 pb-[72px] pt-6 sm:px-6">
@@ -29,7 +31,7 @@ export default async function CategoryPage({ params }: PageProps<"/shop/[categor
       </nav>
       <h1 className="font-display text-[48px] font-bold uppercase leading-none sm:text-[56px]">{c.name}</h1>
       <p className="mb-6 mt-2 text-[17px] text-muted">{c.intro}</p>
-      <CategoryBrowser types={c.types} products={productsIn(c.id)} />
+      <CategoryBrowser types={c.types} products={products} />
     </div>
   );
 }

@@ -3,25 +3,27 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDetail } from "@/components/ProductDetail";
-import { getCategory, getProduct, products, productsIn } from "@/lib/catalog";
+import { getCategory } from "@/lib/catalog";
+import { getAllProducts, getProduct } from "@/lib/products";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getAllProducts();
   return products.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/product/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const p = getProduct(slug);
+  const p = await getProduct(slug);
   return p ? { title: p.name, description: p.description } : {};
 }
 
 export default async function ProductPage({ params }: PageProps<"/product/[slug]">) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getProduct(slug);
   if (!product) notFound();
   const category = getCategory(product.category)!;
-  const related = productsIn(product.category)
-    .filter((p) => p.slug !== product.slug)
+  const related = (await getAllProducts())
+    .filter((p) => p.category === product.category && p.slug !== product.slug)
     .slice(0, 4);
 
   return (

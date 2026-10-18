@@ -1,5 +1,8 @@
-// Product catalog. All prices and stock numbers are SAMPLE data —
-// replace them with your real products (or load them from a database later).
+// Product types, categories and the SAMPLE product list.
+//
+// The live site reads products from the database (src/lib/products.ts).
+// `seedProducts` below is used to fill a new database (npm run db:seed-sql)
+// and as a fallback when no DATABASE_URL is set, e.g. on a developer's laptop.
 
 export type CategoryId = "vinyl" | "doors" | "windows" | "tile";
 
@@ -29,6 +32,7 @@ export type Product = {
   specs: [string, string][];
   colors?: ColorOption[];
   visual: Visual;
+  imageUrl?: string;
   stock: number;
   featured?: boolean;
 };
@@ -84,7 +88,7 @@ const woodColors: ColorOption[] = [
   { name: "Driftwood Grey", hex: "#a9a49b" },
 ];
 
-export const products: Product[] = [
+export const seedProducts: Product[] = [
   // ---------- VINYL ----------
   {
     slug: "oak-luxury-vinyl-plank",
@@ -605,15 +609,35 @@ export function getCategory(id: string): Category | undefined {
   return categories.find((c) => c.id === id);
 }
 
-export function getProduct(slug: string): Product | undefined {
-  return products.find((p) => p.slug === slug);
+export const categoryIds = categories.map((c) => c.id);
+
+export function isCategoryId(v: string): v is CategoryId {
+  return (categoryIds as string[]).includes(v);
 }
 
-export function productsIn(category: CategoryId): Product[] {
-  return products.filter((p) => p.category === category);
-}
+/** What the cart remembers about a product at the moment it was added.
+ *  The server re-checks prices against the database when an order is placed. */
+export type CartSnapshot = {
+  slug: string;
+  sku: string;
+  name: string;
+  unitPrice: number;
+  unitLabel: string;
+  sqftPerBox?: number;
+  visual: Visual;
+};
 
-export const featuredProducts = products.filter((p) => p.featured);
+export function cartSnapshot(p: Product): CartSnapshot {
+  return {
+    slug: p.slug,
+    sku: p.sku,
+    name: p.name,
+    unitPrice: unitPrice(p),
+    unitLabel: unitLabel(p),
+    sqftPerBox: p.sqftPerBox,
+    visual: p.visual,
+  };
+}
 
 /** Price of one sellable unit: a box for flooring/tile, or one item. */
 export function unitPrice(p: Product): number {
@@ -633,7 +657,7 @@ export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export function searchProducts(query: string): Product[] {
+export function searchIn(products: Product[], query: string): Product[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   return products.filter((p) => {

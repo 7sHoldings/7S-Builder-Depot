@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { categories } from "@/lib/catalog";
+import { postJson } from "@/lib/api";
 import { openEmail, storeMailto } from "@/lib/mailto";
 import { site } from "@/lib/site";
+import { Honeypot } from "./Honeypot";
 import { CheckIcon } from "./Icons";
 
 const steps = ["Project", "Details", "Contact", "Done"];
@@ -16,6 +18,8 @@ export function QuoteWizard() {
   const [picked, setPicked] = useState<string[]>(["vinyl"]);
   const [error, setError] = useState("");
   const [mailto, setMailto] = useState("");
+  const [reference, setReference] = useState("");
+  const [sending, setSending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -45,9 +49,39 @@ export function QuoteWizard() {
     send(new FormData(form));
   }
 
-  function send(f: FormData) {
+  async function send(f: FormData) {
+    if (sending) return;
+    setSending(true);
     const get = (k: string) => String(f.get(k) ?? "").trim();
     const names = categories.filter((c) => picked.includes(c.id)).map((c) => c.name);
+
+    const res = await postJson<{ reference: string }>("/api/quotes", {
+      source: "quote_form",
+      name: get("name"),
+      company: get("company"),
+      phone: get("phone"),
+      email: get("email"),
+      customerType: get("role"),
+      materials: picked,
+      area: get("area"),
+      count: get("count"),
+      timeline: get("timeline"),
+      zip: get("zip"),
+      details: get("details"),
+      website: get("website"),
+    });
+    setSending(false);
+    if (res.ok) {
+      setReference(res.data.reference);
+      go(4);
+      return;
+    }
+    if (!res.fallback) {
+      setError(res.message);
+      return;
+    }
+
+    // Database unavailable → send through the customer's email app instead
     const link = storeMailto(`Quote request — ${get("name")} (${names.join(", ")})`, [
       `Name: ${get("name")}`,
       get("company") && `Company: ${get("company")}`,
@@ -96,8 +130,9 @@ export function QuoteWizard() {
           e.preventDefault();
           next();
         }}
-        className="flex flex-col gap-6 border border-line bg-surface p-6 sm:p-8"
+        className="relative flex flex-col gap-6 border border-line bg-surface p-6 sm:p-8"
       >
+        <Honeypot />
         {/* Step 1 */}
         <div data-step="1" hidden={step !== 1} className="flex flex-col gap-4">
           <h2 ref={step === 1 ? headingRef : undefined} tabIndex={-1} className="font-display text-[30px] font-bold uppercase outline-none">
@@ -121,11 +156,6 @@ export function QuoteWizard() {
               );
             })}
           </div>
-          {error && (
-            <p role="alert" className="font-semibold text-brand-dark">
-              {error}
-            </p>
-          )}
         </div>
 
         {/* Step 2 */}
@@ -165,7 +195,7 @@ export function QuoteWizard() {
               />
             </label>
           </div>
-          <p className="text-sm text-muted">Have plans or photos? You can attach them to the email in the last step.</p>
+          <p className="text-sm text-muted">Have plans or photos? You can email them to us after you send this request.</p>
         </div>
 
         {/* Step 3 */}
@@ -209,15 +239,24 @@ export function QuoteWizard() {
               <CheckIcon size={36} />
             </span>
             <h2 ref={headingRef} tabIndex={-1} className="font-display text-[40px] font-bold uppercase outline-none">
-              Almost done
+              {reference ? "Request received" : "Almost done"}
             </h2>
-            <p className="max-w-[520px] text-[17px] text-muted">
-              Your email app opened with your quote request filled in — <strong className="text-ink">press Send</strong> to submit it. We&apos;ll reply within 1
-              business day.
-            </p>
-            <a href={mailto} className="font-semibold text-brand-dark underline">
-              Email app didn&apos;t open? Click here
-            </a>
+            {reference ? (
+              <p className="max-w-[520px] text-[17px] text-muted">
+                Thanks! Your reference is <strong className="text-ink">{reference}</strong>. We&apos;ll reply with materials and pricing within 1 business day.
+                Have plans or photos? Email them to {site.email} with your reference.
+              </p>
+            ) : (
+              <>
+                <p className="max-w-[520px] text-[17px] text-muted">
+                  Your email app opened with your quote request filled in — <strong className="text-ink">press Send</strong> to submit it. We&apos;ll reply within
+                  1 business day.
+                </p>
+                <a href={mailto} className="font-semibold text-brand-dark underline">
+                  Email app didn&apos;t open? Click here
+                </a>
+              </>
+            )}
             <p className="text-sm text-muted">
               Or email {site.email} · call {site.phone}
             </p>
@@ -225,6 +264,12 @@ export function QuoteWizard() {
               Back to home
             </Link>
           </div>
+        )}
+
+        {error && step < 4 && (
+          <p role="alert" className="font-semibold text-brand-dark">
+            {error}
+          </p>
         )}
 
         {step < 4 && (
@@ -238,7 +283,7 @@ export function QuoteWizard() {
               Back
             </button>
             <button type="submit" className="h-[52px] bg-brand px-8 text-[17px] font-semibold text-white hover:bg-brand-dark">
-              {step === 3 ? "Send quote request" : "Continue"}
+              {step === 3 ? (sending ? "Sending…" : "Send quote request") : "Continue"}
             </button>
           </div>
         )}

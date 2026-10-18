@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { priceLabel, unitLabel, unitPrice, type Product } from "@/lib/catalog";
+import { cartSnapshot, priceLabel, unitLabel, unitPrice, type Product } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { site } from "@/lib/site";
 import { AddToCartButton } from "./AddToCartButton";
@@ -156,7 +156,7 @@ export function ProductDetail({ product }: { product: Product }) {
         <div className="flex flex-wrap items-stretch gap-3">
           <QtyStepper value={qty} onChange={setManualQty} label="Quantity" />
           <div className="min-w-[200px] flex-1">
-            <AddToCartButton slug={product.slug} qty={qty} color={color?.name} label={`Add to cart · ${money(each * qty)}`} />
+            <AddToCartButton item={cartSnapshot(product)} qty={qty} color={color?.name} label={`Add to cart · ${money(each * qty)}`} />
           </div>
           <Link href="/quote" className="flex h-[52px] w-full items-center justify-center border-2 border-ink font-semibold text-ink no-underline">
             Request a contractor quote

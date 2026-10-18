@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { unitLabel } from "@/lib/catalog";
 import { cart, toLines, useCartItems } from "@/lib/cart";
 import { money } from "@/lib/money";
 import { site } from "@/lib/site";
@@ -38,25 +37,25 @@ export function CartView() {
             {lines.map((l) => (
               <li key={l.slug + (l.color ?? "")} className="flex flex-wrap items-center gap-5 border border-line bg-surface p-5">
                 <Link href={`/product/${l.slug}`} className="shrink-0">
-                  <ProductVisual visual={l.product.visual} label={l.product.name} className="h-[88px] w-[88px] border border-line" />
+                  <ProductVisual visual={l.visual} label={l.name} className="h-[88px] w-[88px] border border-line" />
                 </Link>
                 <div className="flex min-w-[220px] flex-1 flex-col gap-0.5">
                   <Link href={`/product/${l.slug}`} className="text-lg font-semibold text-ink no-underline">
-                    {l.product.name}
+                    {l.name}
                     {l.color && ` — ${l.color}`}
                   </Link>
                   <span className="text-sm text-muted">
-                    SKU {l.product.sku}
-                    {l.product.sqftPerBox && ` · ${l.product.sqftPerBox} sq ft ${unitLabel(l.product)}`}
+                    SKU {l.sku}
+                    {l.sqftPerBox && ` · ${l.sqftPerBox} sq ft ${l.unitLabel}`}
                   </span>
                   <span className="text-sm text-muted">
-                    {money(l.unitPrice)} {unitLabel(l.product)}
+                    {money(l.unitPrice)} {l.unitLabel}
                   </span>
                   <button type="button" onClick={() => cart.remove(l.slug, l.color)} className="self-start pt-2 text-sm text-brand-dark underline">
                     Remove
                   </button>
                 </div>
-                <QtyStepper size="md" label={`Quantity of ${l.product.name}`} value={l.qty} onChange={(n) => cart.setQty(l.slug, l.color, n)} />
+                <QtyStepper size="md" label={`Quantity of ${l.name}`} value={l.qty} onChange={(n) => cart.setQty(l.slug, l.color, n)} />
                 <span className="min-w-[110px] text-right font-display text-[26px] font-bold">{money(l.lineTotal)}</span>
               </li>
             ))}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { priceLabel, type Product } from "@/lib/catalog";
+import { cartSnapshot, priceLabel, type Product } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { AddToCartButton } from "./AddToCartButton";
 import { ProductVisual } from "./ProductVisual";
@@ -22,7 +22,7 @@ export function ProductCard({ product, showAdd = true }: { product: Product; sho
       </Link>
       {showAdd && (
         <div className="mt-auto px-[18px] pb-[18px] pt-2">
-          <AddToCartButton slug={product.slug} variant="outline" />
+          <AddToCartButton item={cartSnapshot(product)} variant="outline" />
         </div>
       )}
     </article>

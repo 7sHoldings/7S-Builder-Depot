@@ -3,7 +3,8 @@ import { ProIcon, QuoteIcon, RulerIcon, TruckIcon } from "@/components/Icons";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductVisual } from "@/components/ProductVisual";
 import { QuickQuoteForm } from "@/components/QuickQuoteForm";
-import { categories, featuredProducts } from "@/lib/catalog";
+import { categories } from "@/lib/catalog";
+import { getFeaturedProducts } from "@/lib/products";
 import { site } from "@/lib/site";
 
 const services = [
@@ -13,7 +14,8 @@ const services = [
   { icon: ProIcon, title: "Pro accounts", text: "Contractor pricing & job-based orders." },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredProducts = await getFeaturedProducts();
   return (
     <>
       {/* Hero */}

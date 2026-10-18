@@ -18,7 +18,10 @@ export type PlacedOrder = {
   delivery: number;
   tax: number;
   total: number;
-  mailto: string;
+  /** true when the order was saved in the database */
+  saved: boolean;
+  /** set when the order was sent through the customer's email app instead */
+  mailto?: string;
 };
 
 const KEY = "7s-last-order";

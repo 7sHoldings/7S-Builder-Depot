@@ -53,7 +53,7 @@ Every push to `main` will update the live site automatically. You can connect yo
 | To change… | Edit this file |
 | --- | --- |
 | Phone, email, address, hours, delivery fee, tax rate | `src/lib/site.ts` |
-| Products, prices, stock, specs, colors | `src/lib/catalog.ts` |
+| Products, prices, stock, specs, colors | Supabase → Table Editor → `products` (sample data lives in `src/lib/catalog.ts`) |
 | Brand colors and fonts | `src/app/globals.css` (the `@theme` block) |
 | Home page sections | `src/app/page.tsx` |
 | Header / footer | `src/components/Header.tsx`, `src/components/Footer.tsx` |
@@ -62,17 +62,46 @@ Every push to `main` will update the live site automatically. You can connect yo
 
 **Product photos:** products currently show drawn illustrations (`src/components/ProductVisual.tsx`). To use real photos, put the images in `public/products/`, add an `image` field to each product in `catalog.ts`, and render it with `next/image` in `ProductCard.tsx` and `ProductDetail.tsx`.
 
-## How orders and quotes reach you (for now)
+## Database (Supabase)
 
-The site doesn't have a server-side database or payment processor yet. When a customer places an order or sends a quote request, the site opens **their email app** with everything filled in, addressed to `7sbuilderdepot@gmail.com`. They press Send, and you receive it by email. Customers pay at pickup or on delivery (or by Pro account invoice). No card details are collected online.
+Products, orders and quote requests are stored in a Supabase Postgres database.
+
+| Table | What's in it |
+| --- | --- |
+| `products` | Every product: price, stock, specs, colors. Set `active` to false to hide one. |
+| `orders` + `order_items` | Every order placed at checkout, with its line items. `status`: new → confirmed → ready → completed (or cancelled). |
+| `quote_requests` | Every quote request. `status`: new → contacted → quoted → won / lost. |
+
+**Day to day:** open your project at [supabase.com](https://supabase.com/dashboard) → **Table Editor** to see new orders and quote requests, change prices or stock, and update statuses. Product changes show on the site within an hour (or right away after a redeploy).
+
+**Security:** Row Level Security is on for every table with no public access, so customer details can't be read through Supabase's public API. Only the website's server, using `DATABASE_URL`, can read or write.
+
+**Prices are checked on the server.** The cart remembers prices for display, but when an order is placed the server re-prices every item from the database.
+
+### Setting it up
+
+1. In Supabase, run `supabase/migrations/20261018000000_init.sql`, then `supabase/seed.sql` (sample products). Both can be pasted into **SQL Editor**.
+2. In Supabase → **Connect** → **Transaction pooler**, copy the connection string (port 6543) and put in your database password.
+3. In Vercel → **Settings → Environment Variables**, add `DATABASE_URL` with that string, then redeploy.
+
+To regenerate `supabase/seed.sql` after editing the sample catalog: `npm run db:seed-sql`.
+
+### Environment variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes (for the live site) | Supabase transaction-pooler connection string |
+| `RESEND_API_KEY` | Optional | Email alerts for new orders and quotes, via [resend.com](https://resend.com) |
+| `NOTIFY_EMAIL` | Optional | Where alerts go (default `7sbuilderdepot@gmail.com`) |
+| `RESEND_FROM` | Optional | Sender address on a domain verified in Resend, e.g. `7S Builder Depot <orders@7sbuilderdepot.com>` |
+
+Without `DATABASE_URL` (for example on your laptop), the site shows the sample catalog from `src/lib/catalog.ts`. Orders and quotes then go through the customer's email app instead of the database.
 
 ## Next steps
 
-These are the natural upgrades, roughly in order:
-
-1. **Send quotes and orders automatically** — add a Next.js Route Handler (for example `src/app/api/quote/route.ts`) that emails you using a service like Resend or SendGrid, instead of opening the customer's email app.
-2. **Online card payments** — add Stripe Checkout.
-3. **Product database + admin** — move products from `catalog.ts` into a database (for example Postgres on Vercel or Supabase) with an admin page to edit prices and stock.
+1. **Email alerts** — add `RESEND_API_KEY` so you get an email the moment an order or quote arrives.
+2. **Admin page** — a password-protected page on the site to manage orders, quotes and products, so you don't need the Supabase dashboard.
+3. **Online card payments** — add Stripe Checkout.
 4. **Pro accounts** — sign-in for contractors with their own pricing and order history.
 
 ## Project structure

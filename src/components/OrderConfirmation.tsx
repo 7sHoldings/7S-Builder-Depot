@@ -27,13 +27,22 @@ export function OrderConfirmation() {
         <CheckIcon size={36} />
       </span>
       <h1 className="font-display text-[44px] font-bold uppercase leading-none sm:text-[48px]">Order {order.number}</h1>
-      <p className="max-w-[560px] text-lg text-muted">
-        Thanks, {order.name.split(" ")[0]}. Your email app opened with your order filled in — <strong className="text-ink">press Send</strong> to submit it to
-        {" "}{site.name}. We&apos;ll call {order.phone} to confirm stock and payment.
-      </p>
-      <a href={order.mailto} className="font-semibold text-brand-dark underline">
-        Email app didn&apos;t open? Click here to send your order
-      </a>
+      {order.saved ? (
+        <p className="max-w-[560px] text-lg text-muted">
+          Thanks, {order.name.split(" ")[0]} — we&apos;ve received your order. We&apos;ll call {order.phone} to confirm stock and{" "}
+          {order.fulfillment === "delivery" ? "your delivery time" : "when it's ready for pickup"}.
+        </p>
+      ) : (
+        <>
+          <p className="max-w-[560px] text-lg text-muted">
+            Thanks, {order.name.split(" ")[0]}. Your email app opened with your order filled in — <strong className="text-ink">press Send</strong> to submit
+            it to {site.name}. We&apos;ll call {order.phone} to confirm stock and payment.
+          </p>
+          <a href={order.mailto} className="font-semibold text-brand-dark underline">
+            Email app didn&apos;t open? Click here to send your order
+          </a>
+        </>
+      )}
 
       <dl className="grid w-full grid-cols-1 gap-px border border-line bg-line text-left sm:grid-cols-2">
         <div className="bg-ground p-4">

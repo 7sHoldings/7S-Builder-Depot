@@ -1,29 +1,41 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getProduct, unitPrice, type Product } from "./catalog";
+import type { CartSnapshot } from "./catalog";
 
 // The cart lives in the browser (localStorage), so it survives page reloads.
-// When you add accounts or a database later, swap this store for a server one.
+// Each line keeps a snapshot of the product's price; the server re-prices
+// everything from the database when the order is placed.
 
-export type CartItem = { slug: string; qty: number; color?: string };
-export type CartLine = CartItem & { product: Product; unitPrice: number; lineTotal: number };
+export type CartItem = CartSnapshot & { qty: number; color?: string };
+export type CartLine = CartItem & { lineTotal: number };
 
-const KEY = "7s-cart-v1";
+const KEY = "7s-cart-v2";
 const EMPTY: CartItem[] = [];
 
 let items: CartItem[] | null = null;
 const listeners = new Set<() => void>();
 
+function isItem(i: unknown): i is CartItem {
+  if (typeof i !== "object" || i === null) return false;
+  const o = i as Record<string, unknown>;
+  return (
+    typeof o.slug === "string" &&
+    typeof o.name === "string" &&
+    typeof o.sku === "string" &&
+    typeof o.unitPrice === "number" &&
+    typeof o.unitLabel === "string" &&
+    typeof o.qty === "number" &&
+    o.qty >= 1 &&
+    typeof o.visual === "object"
+  );
+}
+
 function load(): CartItem[] {
   try {
     const raw = window.localStorage.getItem(KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (i): i is CartItem =>
-        typeof i === "object" && i !== null && typeof i.slug === "string" && typeof i.qty === "number" && !!getProduct(i.slug),
-    );
+    return Array.isArray(parsed) ? parsed.filter(isItem) : [];
   } catch {
     return [];
   }
@@ -62,14 +74,14 @@ function subscribe(listener: () => void) {
 const sameLine = (a: CartItem, slug: string, color?: string) => a.slug === slug && (a.color ?? "") === (color ?? "");
 
 export const cart = {
-  add(slug: string, qty: number, color?: string) {
+  add(product: CartSnapshot, qty: number, color?: string) {
     if (qty < 1) return;
     const list = current();
-    const existing = list.find((i) => sameLine(i, slug, color));
+    const existing = list.find((i) => sameLine(i, product.slug, color));
     save(
       existing
-        ? list.map((i) => (sameLine(i, slug, color) ? { ...i, qty: i.qty + qty } : i))
-        : [...list, { slug, qty, color }],
+        ? list.map((i) => (sameLine(i, product.slug, color) ? { ...i, ...product, qty: Math.min(999, i.qty + qty) } : i))
+        : [...list, { ...product, qty, color }],
     );
   },
   setQty(slug: string, color: string | undefined, qty: number) {
@@ -88,12 +100,7 @@ export function useCartItems(): CartItem[] {
 }
 
 export function toLines(list: CartItem[]): CartLine[] {
-  return list.flatMap((i) => {
-    const product = getProduct(i.slug);
-    if (!product) return [];
-    const price = unitPrice(product);
-    return [{ ...i, product, unitPrice: price, lineTotal: price * i.qty }];
-  });
+  return list.map((i) => ({ ...i, lineTotal: Math.round(i.unitPrice * i.qty * 100) / 100 }));
 }
 
 export function useCartCount(): number {

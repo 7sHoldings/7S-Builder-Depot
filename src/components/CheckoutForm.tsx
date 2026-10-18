@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { cart, toLines, useCartItems } from "@/lib/cart";
+import { postJson } from "@/lib/api";
 import { openEmail, storeMailto } from "@/lib/mailto";
 import { money } from "@/lib/money";
 import { newOrderNumber, saveOrder, useDeliveryDates, type PlacedOrder } from "@/lib/order";
 import { fullAddress } from "@/lib/site";
 import { orderTotals, type Fulfillment } from "@/lib/totals";
 import { FulfillmentPicker, Totals } from "./CartView";
+import { Honeypot } from "./Honeypot";
 import { LockIcon } from "./Icons";
 
 const input = "h-12 border border-line-strong bg-surface px-3 font-normal focus:border-ink focus:outline-none";
@@ -22,6 +24,7 @@ export function CheckoutForm() {
   const dates = useDeliveryDates();
   const [fulfillment, setFulfillment] = useState<Fulfillment>(params.get("f") === "delivery" ? "delivery" : "pickup");
   const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState("");
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   const t = orderTotals(subtotal, fulfillment);
@@ -37,14 +40,15 @@ export function CheckoutForm() {
     );
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (placing) return;
+    setError("");
+    setPlacing(true);
     const f = new FormData(e.currentTarget);
     const get = (k: string) => String(f.get(k) ?? "").trim();
-    const number = newOrderNumber();
     const date = get("date");
-    const order: Omit<PlacedOrder, "mailto"> = {
-      number,
+    const customer = {
       name: get("name"),
       phone: get("phone"),
       email: get("email"),
@@ -53,9 +57,34 @@ export function CheckoutForm() {
       date,
       payment: get("payment"),
       notes: get("notes") || undefined,
+    };
+
+    // 1) Save the order on the server (prices are re-checked there)
+    const res = await postJson<{ orderNumber: string; subtotal: number; delivery: number; tax: number; total: number; lines: PlacedOrder["lines"] }>(
+      "/api/orders",
+      { ...customer, website: get("website"), items: lines.map((l) => ({ slug: l.slug, qty: l.qty, color: l.color })) },
+    );
+    if (res.ok) {
+      const { orderNumber, lines: savedLines, ...totals } = res.data;
+      saveOrder({ ...customer, ...totals, number: orderNumber, lines: savedLines, saved: true });
+      cart.clear();
+      router.push("/order-confirmed");
+      return;
+    }
+    if (!res.fallback) {
+      setError(res.message);
+      setPlacing(false);
+      return;
+    }
+
+    // 2) Fallback: database unavailable → send the order through the customer's email app
+    const number = newOrderNumber();
+    const order: Omit<PlacedOrder, "mailto" | "saved"> = {
+      number,
+      ...customer,
       lines: lines.map((l) => ({
-        name: l.product.name + (l.color ? ` — ${l.color}` : ""),
-        sku: l.product.sku,
+        name: l.name + (l.color ? ` — ${l.color}` : ""),
+        sku: l.sku,
         qty: l.qty,
         lineTotal: l.lineTotal,
       })),
@@ -79,8 +108,7 @@ export function CheckoutForm() {
       `Tax: ${money(t.tax)}`,
       `Total: ${money(t.total)}`,
     ]);
-    setPlacing(true);
-    saveOrder({ ...order, mailto });
+    saveOrder({ ...order, mailto, saved: false });
     cart.clear();
     openEmail(mailto);
     router.push("/order-confirmed");
@@ -89,6 +117,7 @@ export function CheckoutForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-start gap-8">
       <div className="flex min-w-0 flex-[999_1_600px] flex-col gap-5">
+        <Honeypot />
         <section className="flex flex-col gap-4 border border-line bg-surface p-6">
           <h2 className="font-display text-[26px] font-bold uppercase">
             <span className="text-brand">1</span> · Contact
@@ -159,7 +188,7 @@ export function CheckoutForm() {
           {lines.map((l) => (
             <li key={l.slug + (l.color ?? "")} className="flex justify-between gap-3">
               <span>
-                {l.product.name}
+                {l.name}
                 {l.color && ` — ${l.color}`} × {l.qty}
               </span>
               <span className="font-semibold">{money(l.lineTotal)}</span>
@@ -169,8 +198,13 @@ export function CheckoutForm() {
         <div className="border-t border-line pt-3.5">
           <Totals totals={t} fulfillment={fulfillment} />
         </div>
+        {error && (
+          <p role="alert" className="border-2 border-brand bg-brand-soft p-3 font-semibold text-brand-dark">
+            {error}
+          </p>
+        )}
         <button type="submit" disabled={placing} className="h-14 bg-brand text-lg font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
-          Place order
+          {placing ? "Placing order…" : "Place order"}
         </button>
         <span className="flex items-center gap-2 text-sm text-muted">
           <LockIcon size={16} /> No card details are collected online.
