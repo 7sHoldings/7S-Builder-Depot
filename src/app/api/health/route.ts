@@ -13,7 +13,16 @@ const hints: Record<string, string> = {
   CONNECT_TIMEOUT: "Connection timed out. Use Supabase's Transaction pooler string (port 6543).",
   ECONNREFUSED: "Connection refused. Check the port is 6543 (Transaction pooler).",
   "42P01": "Connected, but the tables are missing. Run supabase/migrations/…_init.sql.",
+  XX000:
+    "The Supabase pooler rejected the login. Check the username is postgres.<project-id> and try aws-0 instead of aws-1 (or the reverse) in the host.",
 };
+
+// Pooler/database error messages that are safe to show (they never include the password).
+function safeMessage(err: unknown): string | undefined {
+  const msg = (err as { message?: string }).message;
+  if (!msg) return undefined;
+  return msg.replace(/postgres(ql)?:\/\/\S+/gi, "[connection string]").slice(0, 160);
+}
 
 export async function GET() {
   await connection(); // always check live, never at build time
@@ -30,6 +39,7 @@ export async function GET() {
       {
         database: "error",
         code,
+        message: safeMessage(err),
         target,
         hint:
           hints[code] ??
