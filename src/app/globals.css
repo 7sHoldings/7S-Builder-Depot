@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* 7S Builder Depot brand tokens.
+   Change a color here and it updates across the whole site. */
+@theme {
+  --color-ground: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-ink: #1a1c1e;
+  --color-muted: #4a4e52;
+  --color-subtle: #5b5f63;
+  --color-line: #dedbd3;
+  --color-line-strong: #c9c5bb;
+  --color-brand: #c2410c;
+  --color-brand-dark: #9a3412;
+  --color-brand-soft: #fff4ed;
+  --color-night: #1f2933;
+  --color-night-deep: #161d24;
+  --color-night-line: #2c3640;
+  --color-night-text: #c9ced3;
+  --color-glow: #fb923c;
+  --color-ok: #166534;
+  --color-ok-soft: #dcfce7;
+
+  --font-sans: "Barlow", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-ground);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+a:hover {
+  color: var(--color-brand);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Striped placeholder used where a product photo will go */
+.photo-placeholder {
+  background: repeating-linear-gradient(135deg, #e7e4dd 0 14px, #efede7 14px 28px);
+}
