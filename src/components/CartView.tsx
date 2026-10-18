@@ -6,7 +6,7 @@ import { cart, toLines, useCartItems } from "@/lib/cart";
 import { money } from "@/lib/money";
 import { site } from "@/lib/site";
 import { orderTotals, type Fulfillment } from "@/lib/totals";
-import { ProductVisual } from "./ProductVisual";
+import { ProductImage } from "./ProductImage";
 import { QtyStepper } from "./QtyStepper";
 
 export function CartView() {
@@ -26,7 +26,7 @@ export function CartView() {
       {lines.length === 0 ? (
         <div className="flex flex-col items-center gap-4 border border-line bg-surface px-6 py-14 text-center">
           <span className="font-display text-[32px] font-bold uppercase">Your cart is empty</span>
-          <span className="text-muted">Browse vinyl, doors, windows and tile to start a project.</span>
+          <span className="text-muted">Browse vinyl, doors and windows to start a project.</span>
           <Link href="/#shop" className="inline-flex h-[50px] items-center bg-brand px-7 font-semibold text-white no-underline hover:bg-brand-dark hover:text-white">
             Start shopping
           </Link>
@@ -35,15 +35,16 @@ export function CartView() {
         <div className="flex flex-wrap items-start gap-8">
           <ul className="flex min-w-0 flex-[999_1_600px] flex-col gap-4">
             {lines.map((l) => (
-              <li key={l.slug + (l.color ?? "")} className="flex flex-wrap items-center gap-5 border border-line bg-surface p-5">
+              <li key={l.key} className="flex flex-wrap items-center gap-5 border border-line bg-surface p-5">
                 <Link href={`/product/${l.slug}`} className="shrink-0">
-                  <ProductVisual visual={l.visual} label={l.name} className="h-[88px] w-[88px] border border-line" />
+                  <ProductImage src={l.image} visual={l.visual} alt={l.name} className="h-[100px] w-[80px] border border-line" sizes="80px" />
                 </Link>
                 <div className="flex min-w-[220px] flex-1 flex-col gap-0.5">
                   <Link href={`/product/${l.slug}`} className="text-lg font-semibold text-ink no-underline">
                     {l.name}
                     {l.color && ` — ${l.color}`}
                   </Link>
+                  {l.variantLabel && <span className="font-semibold">{l.variantLabel}</span>}
                   <span className="text-sm text-muted">
                     SKU {l.sku}
                     {l.sqftPerBox && ` · ${l.sqftPerBox} sq ft ${l.unitLabel}`}
@@ -51,11 +52,11 @@ export function CartView() {
                   <span className="text-sm text-muted">
                     {money(l.unitPrice)} {l.unitLabel}
                   </span>
-                  <button type="button" onClick={() => cart.remove(l.slug, l.color)} className="self-start pt-2 text-sm text-brand-dark underline">
+                  <button type="button" onClick={() => cart.remove(l.key)} className="self-start pt-2 text-sm text-brand-dark underline">
                     Remove
                   </button>
                 </div>
-                <QtyStepper size="md" label={`Quantity of ${l.name}`} value={l.qty} onChange={(n) => cart.setQty(l.slug, l.color, n)} />
+                <QtyStepper size="md" label={`Quantity of ${l.name}`} value={l.qty} onChange={(n) => cart.setQty(l.key, n)} />
                 <span className="min-w-[110px] text-right font-display text-[26px] font-bold">{money(l.lineTotal)}</span>
               </li>
             ))}

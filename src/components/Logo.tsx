@@ -1,14 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
+import logo from "../../public/brand/logo.png";
 
-export function Logo({ dark = false }: { dark?: boolean }) {
+export function Logo({ height = 52 }: { height?: number }) {
   return (
-    <Link href="/" className={`flex items-center gap-3 no-underline ${dark ? "text-white" : "text-ink"}`} aria-label="7S Builder Depot home">
-      <span className="flex h-12 w-12 items-center justify-center bg-brand font-display text-[26px] font-bold text-white">7S</span>
-      <span className="font-display text-2xl font-bold uppercase leading-none tracking-wide">
-        Builder
-        <br />
-        Depot
-      </span>
+    <Link href="/" className="flex shrink-0 items-center no-underline" aria-label="7S Builder Depot home">
+      <Image
+        src={logo}
+        alt="7S Builder Depot — Supply · Deliver · Build"
+        priority
+        style={{ height, width: "auto" }}
+        sizes={`${Math.round((height * logo.width) / logo.height)}px`}
+      />
     </Link>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product } from "@/lib/catalog";
+import { totalStock, type Product } from "@/lib/catalog";
 import { ProductCard } from "./ProductCard";
 
 type Sort = "featured" | "price-asc" | "price-desc" | "name";
@@ -12,10 +12,11 @@ export function CategoryBrowser({ types, products }: { types: string[]; products
   const [inStockOnly, setInStockOnly] = useState(false);
 
   const shown = useMemo(() => {
-    const list = products.filter((p) => (type === "All" || p.type === type) && (!inStockOnly || p.stock > 0));
+    const list = products.filter((p) => (type === "All" || p.type === type) && (!inStockOnly || totalStock(p) !== 0));
     const sorted = [...list];
-    if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
+    const price = (p: Product) => p.price ?? Number.POSITIVE_INFINITY;
+    if (sort === "price-asc") sorted.sort((a, b) => price(a) - price(b));
+    if (sort === "price-desc") sorted.sort((a, b) => price(b) - price(a));
     if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
     return sorted;
   }, [products, type, sort, inStockOnly]);
@@ -24,7 +25,7 @@ export function CategoryBrowser({ types, products }: { types: string[]; products
     <>
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div role="group" aria-label="Filter by type" className="flex flex-wrap gap-2.5">
-          {["All", ...types].map((t) => {
+          {(types.length > 1 ? ["All", ...types] : []).map((t) => {
             const on = t === type;
             return (
               <button
@@ -61,7 +62,7 @@ export function CategoryBrowser({ types, products }: { types: string[]; products
       </p>
 
       {shown.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
           {shown.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}

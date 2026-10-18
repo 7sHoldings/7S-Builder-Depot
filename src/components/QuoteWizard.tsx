@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { categories } from "@/lib/catalog";
 import { postJson } from "@/lib/api";
@@ -15,7 +16,11 @@ const labelCls = "flex flex-col gap-1.5 text-sm font-semibold";
 
 export function QuoteWizard() {
   const [step, setStep] = useState(1);
-  const [picked, setPicked] = useState<string[]>(["vinyl"]);
+  // A product page can link here with ?item=…&cat=… to pre-fill the request
+  const params = useSearchParams();
+  const fromItem = params.get("item")?.slice(0, 200) ?? "";
+  const fromCat = params.get("cat") ?? "";
+  const [picked, setPicked] = useState<string[]>(categories.some((c) => c.id === fromCat) ? [fromCat] : ["vinyl"]);
   const [error, setError] = useState("");
   const [mailto, setMailto] = useState("");
   const [reference, setReference] = useState("");
@@ -190,6 +195,7 @@ export function QuoteWizard() {
               <textarea
                 name="details"
                 rows={4}
+                defaultValue={fromItem ? `Interested in: ${fromItem}\nQuantity: ` : undefined}
                 placeholder="Room sizes, colors you like, door swing, window rough openings…"
                 className={`${input} h-auto resize-y py-3`}
               />

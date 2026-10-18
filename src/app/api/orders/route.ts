@@ -1,9 +1,9 @@
 import { after } from "next/server";
-import { unitLabel, unitPrice, type ColorOption, type Visual } from "@/lib/catalog";
+import { unitLabel, unitPrice, type ColorOption } from "@/lib/catalog";
 import { sql } from "@/lib/db";
 import { money } from "@/lib/money";
 import { notifyStore } from "@/lib/notify";
-import { rowToProduct } from "@/lib/products";
+import { PRODUCT_COLUMNS, rowToProduct, rowToVariant, VARIANT_COLUMNS, type ProductRow, type VariantRow } from "@/lib/products";
 import { fullAddress } from "@/lib/site";
 import { orderTotals } from "@/lib/totals";
 import { asObject, email, InputError, int, isBot, oneOf, phone, requiredStr, str } from "@/lib/validate";
@@ -39,38 +39,51 @@ export async function POST(request: Request) {
       const i = asObject(raw);
       return {
         slug: requiredStr(i, "slug", 120),
+        variantId: str(i, "variantId", { max: 120 }),
         qty: int(i, "qty", { min: 1, max: 999 }) ?? 1,
         color: str(i, "color", { max: 60 }),
       };
     });
 
     const slugs = [...new Set(wanted.map((w) => w.slug))];
-    const rows = await sql`
-      select slug, sku, name, category, type, price, unit, sqft_per_box, summary, description,
-             specs, colors, visual, image_url, stock, featured
-      from public.products where active and slug in ${sql(slugs)}`;
+    const rows = await sql<ProductRow[]>`select ${sql.unsafe(PRODUCT_COLUMNS)} from public.products where active and slug in ${sql(slugs)}`;
+    const vrows = await sql<VariantRow[]>`select ${sql.unsafe(VARIANT_COLUMNS)} from public.product_variants where active and product_slug in ${sql(slugs)}`;
     const bySlug = new Map(
       rows.map((r) => {
-        const p = rowToProduct(r as Parameters<typeof rowToProduct>[0]);
+        const p = rowToProduct(r, vrows.filter((v) => v.product_slug === r.slug).map(rowToVariant));
         return [p.slug, p] as const;
       }),
     );
 
+    const unavailable = "One of the items in your cart is no longer available. Please review your cart.";
     const lines = wanted.map((w) => {
       const p = bySlug.get(w.slug);
-      if (!p) throw new InputError("One of the products in your cart is no longer available. Please review your cart.");
+      if (!p) throw new InputError(unavailable);
+      // Products with sizes must name one of their sizes; products without sizes must not
+      const v = p.variants.length ? p.variants.find((x) => x.id === w.variantId) : undefined;
+      if (p.variants.length && !v) throw new InputError(unavailable);
+      const stock = v ? v.stock : p.stock;
+      if (stock != null && w.qty > stock) {
+        throw new InputError(
+          stock === 0
+            ? `${p.name}${v ? ` (${v.label})` : ""} just sold out. Please remove it from your cart.`
+            : `Only ${stock} left of ${p.name}${v ? ` (${v.label})` : ""}. Please lower the quantity.`,
+        );
+      }
+      const price = unitPrice(p, v);
+      if (price == null) throw new InputError(`${p.name} is priced on request — please request a quote for it.`);
       const color = w.color && (p.colors as ColorOption[] | undefined)?.some((c) => c.name === w.color) ? w.color : undefined;
-      const price = unitPrice(p);
       return {
         slug: p.slug,
-        sku: p.sku,
-        name: p.name + (color ? ` — ${color}` : ""),
+        sku: v?.sku ?? p.sku,
+        name: p.name + (v ? ` — ${v.label}` : "") + (color ? ` — ${color}` : ""),
+        variantId: v?.id,
+        variantLabel: v?.label,
         color,
         unitLabel: unitLabel(p),
         unitPrice: price,
         qty: w.qty,
         lineTotal: Math.round(price * w.qty * 100) / 100,
-        visual: p.visual as Visual,
       };
     });
 
@@ -91,6 +104,8 @@ export async function POST(request: Request) {
           lines.map((l) => ({
             order_id: order.id,
             product_slug: l.slug,
+            variant_id: l.variantId ?? null,
+            variant_label: l.variantLabel ?? null,
             sku: l.sku,
             name: l.name,
             color: l.color ?? null,

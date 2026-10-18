@@ -62,7 +62,7 @@ export function CheckoutForm() {
     // 1) Save the order on the server (prices are re-checked there)
     const res = await postJson<{ orderNumber: string; subtotal: number; delivery: number; tax: number; total: number; lines: PlacedOrder["lines"] }>(
       "/api/orders",
-      { ...customer, website: get("website"), items: lines.map((l) => ({ slug: l.slug, qty: l.qty, color: l.color })) },
+      { ...customer, website: get("website"), items: lines.map((l) => ({ slug: l.slug, variantId: l.variantId, qty: l.qty, color: l.color })) },
     );
     if (res.ok) {
       const { orderNumber, lines: savedLines, ...totals } = res.data;
@@ -83,7 +83,7 @@ export function CheckoutForm() {
       number,
       ...customer,
       lines: lines.map((l) => ({
-        name: l.name + (l.color ? ` — ${l.color}` : ""),
+        name: l.name + (l.variantLabel ? ` — ${l.variantLabel}` : "") + (l.color ? ` — ${l.color}` : ""),
         sku: l.sku,
         qty: l.qty,
         lineTotal: l.lineTotal,
@@ -186,9 +186,10 @@ export function CheckoutForm() {
         <h2 className="font-display text-[28px] font-bold uppercase">Your order</h2>
         <ul className="flex flex-col gap-3 text-[15px]">
           {lines.map((l) => (
-            <li key={l.slug + (l.color ?? "")} className="flex justify-between gap-3">
+            <li key={l.key} className="flex justify-between gap-3">
               <span>
                 {l.name}
+                {l.variantLabel && ` — ${l.variantLabel}`}
                 {l.color && ` — ${l.color}`} × {l.qty}
               </span>
               <span className="font-semibold">{money(l.lineTotal)}</span>

@@ -22,9 +22,10 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
   const product = await getProduct(slug);
   if (!product) notFound();
   const category = getCategory(product.category)!;
-  const related = (await getAllProducts())
-    .filter((p) => p.category === product.category && p.slug !== product.slug)
-    .slice(0, 4);
+  const all = await getAllProducts();
+  const related = all.filter((p) => p.category === product.category && p.slug !== product.slug).slice(0, 4);
+  // Vinyl colors are separate products of the same type; show them as color swatches
+  const siblings = product.category === "vinyl" ? all.filter((p) => p.category === "vinyl" && p.type === product.type) : [];
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 pb-[72px] pt-6 sm:px-6">
@@ -39,9 +40,9 @@ export default async function ProductPage({ params }: PageProps<"/product/[slug]
         / <span className="text-ink">{product.name}</span>
       </nav>
 
-      <ProductDetail product={product} />
+      <ProductDetail product={product} siblings={siblings} />
 
-      {related.length > 0 && (
+      {related.length > 0 && product.category !== "vinyl" && (
         <section className="mt-20">
           <h2 className="mb-6 font-display text-[36px] font-bold uppercase leading-none">More {category.name.toLowerCase()}</h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">

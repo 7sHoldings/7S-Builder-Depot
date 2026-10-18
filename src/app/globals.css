@@ -10,14 +10,15 @@
   --color-subtle: #5b5f63;
   --color-line: #dedbd3;
   --color-line-strong: #c9c5bb;
-  --color-brand: #c2410c;
-  --color-brand-dark: #9a3412;
-  --color-brand-soft: #fff4ed;
+  /* 7S logo red (#E60000), deepened slightly so white text on it stays readable */
+  --color-brand: #d00000;
+  --color-brand-dark: #a00000;
+  --color-brand-soft: #fff1f1;
   --color-night: #1f2933;
   --color-night-deep: #161d24;
   --color-night-line: #2c3640;
   --color-night-text: #c9ced3;
-  --color-glow: #fb923c;
+  --color-glow: #ff5a5a;
   --color-ok: #166534;
   --color-ok-soft: #dcfce7;
 

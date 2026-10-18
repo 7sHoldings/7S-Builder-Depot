@@ -12,7 +12,6 @@ const links = [
   { href: "/shop/vinyl", label: "Vinyl" },
   { href: "/shop/doors", label: "Doors" },
   { href: "/shop/windows", label: "Windows" },
-  { href: "/shop/tile", label: "Tile" },
   { href: "/quote", label: "Pro & Contractors" },
 ];
 

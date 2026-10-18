@@ -5,16 +5,18 @@ import type { CartSnapshot } from "./catalog";
 
 // The cart lives in the browser (localStorage), so it survives page reloads.
 // Each line keeps a snapshot of the product's price; the server re-prices
-// everything from the database when the order is placed.
+// everything (and checks stock) when the order is placed.
 
 export type CartItem = CartSnapshot & { qty: number; color?: string };
-export type CartLine = CartItem & { lineTotal: number };
+export type CartLine = CartItem & { key: string; lineTotal: number };
 
-const KEY = "7s-cart-v2";
+const KEY = "7s-cart-v3";
 const EMPTY: CartItem[] = [];
 
 let items: CartItem[] | null = null;
 const listeners = new Set<() => void>();
+
+export const lineKey = (i: Pick<CartItem, "slug" | "variantId" | "color">) => `${i.slug}|${i.variantId ?? ""}|${i.color ?? ""}`;
 
 function isItem(i: unknown): i is CartItem {
   if (typeof i !== "object" || i === null) return false;
@@ -71,24 +73,23 @@ function subscribe(listener: () => void) {
   };
 }
 
-const sameLine = (a: CartItem, slug: string, color?: string) => a.slug === slug && (a.color ?? "") === (color ?? "");
-
 export const cart = {
   add(product: CartSnapshot, qty: number, color?: string) {
     if (qty < 1) return;
+    const k = lineKey({ ...product, color });
     const list = current();
-    const existing = list.find((i) => sameLine(i, product.slug, color));
+    const existing = list.find((i) => lineKey(i) === k);
     save(
       existing
-        ? list.map((i) => (sameLine(i, product.slug, color) ? { ...i, ...product, qty: Math.min(999, i.qty + qty) } : i))
+        ? list.map((i) => (lineKey(i) === k ? { ...i, ...product, qty: Math.min(999, i.qty + qty) } : i))
         : [...list, { ...product, qty, color }],
     );
   },
-  setQty(slug: string, color: string | undefined, qty: number) {
-    save(current().map((i) => (sameLine(i, slug, color) ? { ...i, qty: Math.max(1, Math.min(999, qty)) } : i)));
+  setQty(key: string, qty: number) {
+    save(current().map((i) => (lineKey(i) === key ? { ...i, qty: Math.max(1, Math.min(999, qty)) } : i)));
   },
-  remove(slug: string, color?: string) {
-    save(current().filter((i) => !sameLine(i, slug, color)));
+  remove(key: string) {
+    save(current().filter((i) => lineKey(i) !== key));
   },
   clear() {
     save([]);
@@ -100,7 +101,7 @@ export function useCartItems(): CartItem[] {
 }
 
 export function toLines(list: CartItem[]): CartLine[] {
-  return list.map((i) => ({ ...i, lineTotal: Math.round(i.unitPrice * i.qty * 100) / 100 }));
+  return list.map((i) => ({ ...i, key: lineKey(i), lineTotal: Math.round(i.unitPrice * i.qty * 100) / 100 }));
 }
 
 export function useCartCount(): number {

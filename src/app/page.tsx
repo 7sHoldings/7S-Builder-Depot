@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ProIcon, QuoteIcon, RulerIcon, TruckIcon } from "@/components/Icons";
 import { ProductCard } from "@/components/ProductCard";
-import { ProductVisual } from "@/components/ProductVisual";
+import { ProductImage } from "@/components/ProductImage";
 import { QuickQuoteForm } from "@/components/QuickQuoteForm";
 import { categories } from "@/lib/catalog";
 import { getFeaturedProducts } from "@/lib/products";
@@ -22,7 +22,7 @@ export default async function HomePage() {
       <section className="bg-surface">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-12 px-4 pb-16 pt-14 sm:px-6">
           <div className="flex flex-[1_1_440px] flex-col gap-6">
-            <span className="text-sm font-semibold uppercase tracking-[2px] text-brand">Vinyl · Doors · Windows · Tile</span>
+            <span className="text-sm font-semibold uppercase tracking-[2px] text-brand">Supply · Deliver · Build</span>
             <h1 className="font-display text-[52px] font-bold uppercase leading-[0.95] tracking-wide sm:text-[72px]">
               Build it right,
               <br />
@@ -42,12 +42,17 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Material board: one swatch per category */}
-          <div className="grid flex-[1_1_440px] grid-cols-2 gap-3" aria-hidden="true">
-            <ProductVisual visual={categories[0].visual} label="" className="h-[200px] sm:h-[220px]" />
-            <ProductVisual visual={categories[1].visual} label="" className="h-[200px] bg-[#efede7] sm:h-[220px]" />
-            <ProductVisual visual={categories[2].visual} label="" className="h-[200px] sm:h-[220px]" />
-            <ProductVisual visual={categories[3].visual} label="" className="h-[200px] sm:h-[220px]" />
+          {/* Product board: real products from each category */}
+          <div className="grid flex-[1_1_440px] grid-cols-2 grid-rows-2 gap-3">
+            <Link href="/shop/doors" className="row-span-2 block border border-line" aria-label="Shop doors">
+              <ProductImage src="/products/door-2panel-a.jpg" visual={categories[1].visual} alt="2-panel Shaker prehung door" className="h-full min-h-[360px]" priority sizes="(max-width: 900px) 50vw, 300px" />
+            </Link>
+            <Link href="/shop/vinyl" className="block border border-line" aria-label="Shop vinyl">
+              <ProductImage src="/products/vinyl-smoky-grey-oak.jpg" visual={categories[0].visual} alt="Smoky Grey Oak vinyl plank" className="h-[200px] sm:h-[220px]" priority sizes="(max-width: 900px) 50vw, 300px" />
+            </Link>
+            <Link href="/shop/windows" className="block border border-line" aria-label="Shop windows">
+              <ProductImage src="/products/window-single-hung-30x60.jpg" visual={categories[2].visual} alt="Single hung window" className="h-[200px] sm:h-[220px]" priority sizes="(max-width: 900px) 50vw, 300px" />
+            </Link>
           </div>
         </div>
       </section>
@@ -61,11 +66,11 @@ export default async function HomePage() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
           {categories.map((c) => (
             <Link key={c.id} href={`/shop/${c.id}`} className="group flex flex-col border border-line bg-surface text-ink no-underline">
-              <ProductVisual visual={c.visual} label={`${c.name} sample`} className="h-[200px]" />
+              <ProductImage src={c.image} visual={c.visual} alt={c.name} className="h-[240px] border-b border-[#eeece7]" sizes="(max-width: 640px) 100vw, 300px" />
               <div className="flex flex-col gap-1.5 p-5">
                 <span className="font-display text-[28px] font-bold uppercase">{c.name}</span>
                 <span className="text-[15px] text-muted">{c.blurb}</span>
-                <span className="mt-2 font-semibold text-brand group-hover:underline">Shop {c.name.toLowerCase()} →</span>
+                <span className="mt-2 font-semibold text-brand group-hover:underline">{c.image ? `Shop ${c.name.toLowerCase()} →` : "Ask us about tile →"}</span>
               </div>
             </Link>
           ))}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { QuoteWizard } from "@/components/QuoteWizard";
 import { site } from "@/lib/site";
 
@@ -20,7 +21,9 @@ export default function QuotePage() {
           .
         </p>
       </div>
-      <QuoteWizard />
+      <Suspense fallback={<p className="text-muted">Loading the quote form…</p>}>
+        <QuoteWizard />
+      </Suspense>
     </div>
   );
 }

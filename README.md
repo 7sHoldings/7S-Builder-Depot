@@ -80,11 +80,13 @@ Products, orders and quote requests are stored in a Supabase Postgres database.
 
 ### Setting it up
 
-1. In Supabase, run `supabase/migrations/20261018000000_init.sql`, then `supabase/seed.sql` (sample products). Both can be pasted into **SQL Editor**.
+1. In Supabase **SQL Editor**, run the migrations in `supabase/migrations/` in order (`…_init.sql`, then `…_variants.sql`), then `supabase/seed.sql` (the catalog: vinyl, doors with sizes/swing/stock, windows with sizes). All are safe to re-run.
 2. In Supabase → **Connect** → **Transaction pooler**, copy the connection string (port 6543) and put in your database password.
 3. In Vercel → **Settings → Environment Variables**, add `DATABASE_URL` with that string, then redeploy.
 
-To regenerate `supabase/seed.sql` after editing the sample catalog: `npm run db:seed-sql`.
+Products live in `products`; sizes (door size + swing, window size), per-size stock and photos live in `product_variants`. A product with `price` empty shows "Price on request" and can only be quoted, not ordered. Stock is not reduced automatically when orders come in — update it in the Table Editor.
+
+To regenerate `supabase/seed.sql` after editing the catalog in `src/lib/catalog.ts`: `npm run db:seed-sql`.
 
 ### Environment variables
 
