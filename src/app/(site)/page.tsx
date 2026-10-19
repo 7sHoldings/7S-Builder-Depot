@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { QuickQuoteForm } from "@/components/QuickQuoteForm";
 import { categories } from "@/lib/catalog";
-import { getFeaturedProducts } from "@/lib/products";
+import { getAllProducts, getFeaturedProducts } from "@/lib/products";
 import { site } from "@/lib/site";
 
 const services = [
@@ -16,6 +16,12 @@ const services = [
 
 export default async function HomePage() {
   const featuredProducts = await getFeaturedProducts();
+  const all = await getAllProducts();
+  // A category with no products yet (tile today) shows as "coming soon"
+  const cards = categories.map((c) => {
+    const first = all.find((p) => p.category === c.id);
+    return { ...c, open: !!first, image: c.image ?? first?.images[0], blurb: first || c.id !== "tile" ? (c.id === "tile" ? "Floor & wall tile" : c.blurb) : c.blurb };
+  });
   return (
     <>
       {/* Hero */}
@@ -61,16 +67,15 @@ export default async function HomePage() {
       <section id="shop" className="mx-auto max-w-[1280px] scroll-mt-28 px-4 pb-8 pt-[72px] sm:px-6">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
           <h2 className="font-display text-[44px] font-bold uppercase leading-none">Shop by category</h2>
-          <span className="text-subtle">More categories coming soon</span>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
-          {categories.map((c) => (
+          {cards.map((c) => (
             <Link key={c.id} href={`/shop/${c.id}`} className="group flex flex-col border border-line bg-surface text-ink no-underline">
               <ProductImage src={c.image} visual={c.visual} alt={c.name} className="h-[240px] border-b border-[#eeece7]" sizes="(max-width: 640px) 100vw, 300px" />
               <div className="flex flex-col gap-1.5 p-5">
                 <span className="font-display text-[28px] font-bold uppercase">{c.name}</span>
                 <span className="text-[15px] text-muted">{c.blurb}</span>
-                <span className="mt-2 font-semibold text-brand group-hover:underline">{c.image ? `Shop ${c.name.toLowerCase()} →` : "Ask us about tile →"}</span>
+                <span className="mt-2 font-semibold text-brand group-hover:underline">{c.open ? `Shop ${c.name.toLowerCase()} →` : `Ask us about ${c.name.toLowerCase()} →`}</span>
               </div>
             </Link>
           ))}

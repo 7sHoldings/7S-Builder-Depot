@@ -8,14 +8,16 @@ import { site } from "@/lib/site";
 import { CartIcon, CloseIcon, MenuIcon, PhoneIcon, SearchIcon } from "./Icons";
 import { Logo } from "./Logo";
 
-const links = [
+const baseLinks = [
   { href: "/shop/vinyl", label: "Vinyl" },
   { href: "/shop/doors", label: "Doors" },
   { href: "/shop/windows", label: "Windows" },
+  { href: "/shop/tile", label: "Tile" },
   { href: "/quote", label: "Pro & Contractors" },
 ];
 
-export function Header() {
+export function Header({ showTile = false }: { showTile?: boolean }) {
+  const links = showTile ? baseLinks : baseLinks.filter((l) => l.href !== "/shop/tile");
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,8 +36,8 @@ export function Header() {
           <Logo />
 
           <nav aria-label="Main" className="hidden lg:block">
-            <Suspense fallback={<NavLinks active={null} />}>
-              <ActiveNavLinks />
+            <Suspense fallback={<NavLinks links={links} active={null} />}>
+              <ActiveNavLinks links={links} />
             </Suspense>
           </nav>
 
@@ -60,8 +62,8 @@ export function Header() {
             <div className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 py-4 sm:px-6">
               <SearchForm className="flex md:hidden" />
               <nav aria-label="Mobile" onClick={() => setOpen(false)}>
-                <Suspense fallback={<NavLinks active={null} vertical />}>
-                  <ActiveNavLinks vertical />
+                <Suspense fallback={<NavLinks links={links} active={null} vertical />}>
+                  <ActiveNavLinks links={links} vertical />
                 </Suspense>
               </nav>
               <a href={site.phoneHref} className="flex items-center gap-2 font-semibold">
@@ -75,12 +77,14 @@ export function Header() {
   );
 }
 
-function ActiveNavLinks({ vertical = false }: { vertical?: boolean }) {
+type NavLink = (typeof baseLinks)[number];
+
+function ActiveNavLinks({ links, vertical = false }: { links: NavLink[]; vertical?: boolean }) {
   const pathname = usePathname();
-  return <NavLinks active={pathname} vertical={vertical} />;
+  return <NavLinks links={links} active={pathname} vertical={vertical} />;
 }
 
-function NavLinks({ active, vertical = false }: { active: string | null; vertical?: boolean }) {
+function NavLinks({ links, active, vertical = false }: { links: NavLink[]; active: string | null; vertical?: boolean }) {
   return (
     <ul className={`flex font-semibold ${vertical ? "flex-col gap-1" : "flex-wrap gap-x-6"}`}>
       {links.map((l) => {

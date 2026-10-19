@@ -179,7 +179,7 @@ export function ProductDetail({ product, siblings }: { product: Product; sibling
 
         {/* Windows: size */}
         {!isDoor && variants.length > 1 && (
-          <ChipGroup label={`Size (W × H): ${variant?.label ?? ""}`}>
+          <ChipGroup label={`${variants.every((v) => v.widthIn && v.heightIn) ? "Size (W × H)" : "Option"}: ${variant?.label ?? ""}`}>
             {variants.map((v) => (
               <Chip key={v.id} on={v.id === variant?.id} onClick={() => { setSizeId(v.id); setPhotoIdx(0); }}>
                 {v.label}

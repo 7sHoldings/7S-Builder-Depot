@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { DoorStockTable } from "@/components/DoorStockTable";
 import { categories, getCategory, isCategoryId } from "@/lib/catalog";
@@ -38,12 +39,22 @@ const highlights: Record<string, [string, string][]> = {
   ],
 };
 
-export default async function CategoryPage({ params }: PageProps<"/shop/[category]">) {
+export default function CategoryPage({ params }: PageProps<"/shop/[category]">) {
+  return (
+    <Suspense fallback={<div className="mx-auto min-h-[70vh] max-w-[1280px] px-4 pt-6 text-muted sm:px-6">Loading…</div>}>
+      <Category params={params} />
+    </Suspense>
+  );
+}
+
+async function Category({ params }: Pick<PageProps<"/shop/[category]">, "params">) {
   const { category } = await params;
   const c = getCategory(category);
   if (!c || !isCategoryId(category)) notFound();
   const products = await getProductsIn(c.id);
   const points = highlights[c.id];
+  // Filter buttons: the category's usual types first, then any new types added in the admin area
+  const types = [...new Set([...c.types, ...products.map((p) => p.type)])].filter((t) => products.some((p) => p.type === t));
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 pb-[72px] pt-6 sm:px-6">
@@ -54,7 +65,7 @@ export default async function CategoryPage({ params }: PageProps<"/shop/[categor
         / <span className="text-ink">{c.name}</span>
       </nav>
       <h1 className="font-display text-[48px] font-bold uppercase leading-none sm:text-[56px]">{c.name}</h1>
-      <p className="mb-6 mt-2 max-w-[680px] text-[17px] text-muted">{c.intro}</p>
+      <p className="mb-6 mt-2 max-w-[680px] text-[17px] text-muted">{c.id === "tile" && products.length ? "Floor and wall tile — call or request a quote for project quantities." : c.intro}</p>
 
       {points && (
         <ul className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-px border border-line bg-line">
@@ -83,7 +94,7 @@ export default async function CategoryPage({ params }: PageProps<"/shop/[categor
           </div>
         </div>
       ) : (
-        <CategoryBrowser types={c.types} products={products} />
+        <CategoryBrowser types={types} products={products} />
       )}
 
       {c.id === "doors" && products.length > 0 && <DoorStockTable products={products} />}

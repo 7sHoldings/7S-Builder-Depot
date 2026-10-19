@@ -80,7 +80,7 @@ Products, orders and quote requests are stored in a Supabase Postgres database.
 
 ### Setting it up
 
-1. In Supabase **SQL Editor**, run the migrations in `supabase/migrations/` in order (`…_init.sql`, then `…_variants.sql`), then `supabase/seed.sql` (the catalog: vinyl, doors with sizes/swing/stock, windows with sizes). All are safe to re-run.
+1. In Supabase **SQL Editor**, run the migrations in `supabase/migrations/` in order (`…_init.sql`, `…_variants.sql`, then `…_admin.sql`), then `supabase/seed.sql` (the starting catalog: vinyl, doors with sizes/swing/stock, windows with sizes). All are safe to re-run, and the seed never overwrites changes made in the admin area.
 2. In Supabase → **Connect** → **Transaction pooler**, copy the connection string (port 6543) and put in your database password.
 3. In Vercel → **Settings → Environment Variables**, add `DATABASE_URL` with that string, then redeploy.
 
@@ -93,11 +93,24 @@ To regenerate `supabase/seed.sql` after editing the catalog in `src/lib/catalog.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | Yes (for the live site) | Supabase transaction-pooler connection string |
+| `ADMIN_PASSWORD` | Yes (for /admin) | Password for the admin area, at least 10 characters. Changing it signs everyone out. |
 | `RESEND_API_KEY` | Optional | Email alerts for new orders and quotes, via [resend.com](https://resend.com) |
 | `NOTIFY_EMAIL` | Optional | Where alerts go (default `7sbuilderdepot@gmail.com`) |
 | `RESEND_FROM` | Optional | Sender address on a domain verified in Resend, e.g. `7S Builder Depot <orders@7sbuilderdepot.com>` |
 
 Without `DATABASE_URL` (for example on your laptop), the site shows the sample catalog from `src/lib/catalog.ts`. Orders and quotes then go through the customer's email app instead of the database.
+
+## Admin area (/admin)
+
+Go to **7sbuilderdepot.com/admin** and sign in with `ADMIN_PASSWORD`. From there you can:
+
+- **Products** — add, edit, hide or delete products: name, category, type, price (leave empty for “Price on request”), sq ft per box, description, specifications, photos (uploaded and resized automatically), stock, and sizes. Doors use one size row per swing (right-hand / left-hand); the “Quick add sizes” box creates rows for many widths × heights at once.
+- **Orders** — every online order with the customer's details; change the status as you work on it.
+- **Quote requests** — every quote request; mark it contacted, quoted, won or lost.
+
+Saving a product updates the website right away. Uploaded photos are stored in the database (`media` table) and served from `/media/<id>`.
+
+Stock is not reduced automatically when an order comes in — lower it in the product's size rows.
 
 ## Next steps
 

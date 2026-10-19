@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDetail } from "@/components/ProductDetail";
 import { getCategory } from "@/lib/catalog";
@@ -17,7 +18,16 @@ export async function generateMetadata({ params }: PageProps<"/product/[slug]">)
   return p ? { title: p.name, description: p.description } : {};
 }
 
-export default async function ProductPage({ params }: PageProps<"/product/[slug]">) {
+export default function ProductPage({ params }: PageProps<"/product/[slug]">) {
+  // params are read inside Suspense so products added in the admin area render on demand
+  return (
+    <Suspense fallback={<div className="mx-auto min-h-[70vh] max-w-[1280px] px-4 pt-6 text-muted sm:px-6">Loading product…</div>}>
+      <Product params={params} />
+    </Suspense>
+  );
+}
+
+async function Product({ params }: Pick<PageProps<"/product/[slug]">, "params">) {
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
